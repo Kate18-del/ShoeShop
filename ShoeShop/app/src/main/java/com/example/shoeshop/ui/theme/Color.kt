@@ -1,7 +1,7 @@
 package com.example.shoeshop.ui.theme
 
 import androidx.compose.ui.graphics.Color
-
+//
 val Red = Color(0xFFF87265)
 val Accent = Color(0xFF48B2E7)
 val Disable = Color(0xFF2B6B8B)
