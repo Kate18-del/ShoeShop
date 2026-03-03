@@ -1,5 +1,6 @@
 package com.example.shoeshop.ui.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,7 +33,7 @@ import kotlin.text.isNotEmpty
 fun ForgotPasswordScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
-    onNavigateToOtpVerification: (email: String) -> Unit = {},
+    onNavigateToOtpVerification: () -> Unit = {},
     viewModel: ForgotPasswordViewModel = viewModel()
 ) {
     val uiState by viewModel.passwordRecoveryState.collectAsState()
@@ -39,15 +41,18 @@ fun ForgotPasswordScreen(
     val isEmailValid by viewModel.isEmailValid.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
 
     // Состояние для отображения AlertDialog
     var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // Обработка состояний
     LaunchedEffect(uiState) {
         when (uiState) {
             is PasswordRecoveryState.Success -> {
                 showSuccessDialog = true
+                // Сохраняем email в SharedPreferences при успехе
+                saveUserEmail(context, email)
             }
             is PasswordRecoveryState.Error -> {
                 scope.launch {
@@ -66,7 +71,7 @@ fun ForgotPasswordScreen(
         PasswordResetAlertDialog(
             onConfirm = {
                 showSuccessDialog = false
-                onNavigateToOtpVerification(email)
+                onNavigateToOtpVerification()
             },
             onDismiss = {
                 showSuccessDialog = false
@@ -190,6 +195,12 @@ fun ForgotPasswordScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+
+private fun saveUserEmail(context: Context, email: String) {
+    val sharedPreferences = context.getSharedPreferences("shoe_shop_prefs", Context.MODE_PRIVATE)
+    sharedPreferences.edit().putString("user_email", email).apply()
 }
 
 @Preview(showBackground = true, showSystemUi = true)

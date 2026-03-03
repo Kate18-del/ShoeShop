@@ -44,47 +44,45 @@ class EmailVerificationViewModel : ViewModel() {
 
                 when (otpType) {
                     OtpType.RECOVERY -> {
-                        // Для восстановления пароля используем type = "recovery"
-                        val request = VerifyOtpRequest(
-                            email = email,
-                            token = otpCode,      // 6-значный код из email
-                            type = "recovery"      // Важно: именно "recovery"
+                        Log.d("DEBUG1", "=== НАЧАЛО verifyRecoveryOtp ===")
+                        Log.d("DEBUG1", "email: $email")
+                        Log.d("DEBUG1", "otpCode: $otpCode")
+
+                        val response = RetrofitInstance.userManagementService.verifyOtp(
+                            VerifyOtpRequest(
+                                email = email,
+                                token = otpCode,
+                                type = "recovery"
+                            )
                         )
 
-                        Log.d("RecoveryOTP", "Sending request: $request")
-
-                        val response = RetrofitInstance.userManagementService.verifyOtp(request)
+                        Log.d("DEBUG1", "response.code(): ${response.code()}")
 
                         if (response.isSuccessful) {
-                            response.body()?.let { verifyResponse ->
-                                // Успешная верификация recovery OTP
-                                _verificationState.value = VerificationState.Success(
-                                    type = OtpType.RECOVERY,
-                                    data = verifyResponse
-                                )
+                            val body = response.body()
+                            Log.d("DEBUG1", "body: $body")
 
-                                // Сохраняем refresh_token для сброса пароля
+                            if (body != null) {
+                                Log.d("DEBUG1", "body.access_token: ${body.access_token}")
+                                Log.d("DEBUG1", "body.refresh_token: ${body.refresh_token}")
+
+                                // СОХРАНЯЕМ ТОКЕН
                                 _recoveryState.value = RecoveryState(
-                                    resetToken = verifyResponse.refresh_token, // Важно!
+                                    resetToken = body.refresh_token,
                                     email = email
                                 )
+                                Log.d("DEBUG1", "_recoveryState.value установлен: ${_recoveryState.value}")
 
-                                Log.d("RecoveryOTP", "Success: ${verifyResponse}")
-                            } ?: run {
-                                _verificationState.value = VerificationState.Error("Empty response")
+                                _verificationState.value = VerificationState.Success(
+                                    type = OtpType.RECOVERY,
+                                    data = body
+                                )
+                                Log.d("DEBUG1", "_verificationState.value установлен: Success")
                             }
                         } else {
-                            val errorBody = response.errorBody()?.string()
-                            Log.e("RecoveryOTP", "Error ${response.code()}: $errorBody")
-
-                            val errorMessage = when (response.code()) {
-                                401 -> "Неверный код или код истек"
-                                404 -> "Email не найден"
-                                422 -> "Неверный формат кода"
-                                else -> "Ошибка проверки кода: ${response.message()}"
-                            }
-                            _verificationState.value = VerificationState.Error(errorMessage)
+                            Log.d("DEBUG1", "response.errorBody(): ${response.errorBody()?.string()}")
                         }
+
                     }
 
                     OtpType.EMAIL -> {
@@ -146,8 +144,11 @@ class EmailVerificationViewModel : ViewModel() {
         _recoveryState.value = null
     }
 
+
     fun getResetToken(): String? {
-        return _recoveryState.value?.resetToken
+        val token = _recoveryState.value?.resetToken
+        Log.d("DEBUG3", "getResetToken() вызван, возвращает: $token")
+        return token
     }
 }
 
@@ -173,3 +174,4 @@ data class RecoveryState(
     val resetToken: String?,
     val email: String
 )
+

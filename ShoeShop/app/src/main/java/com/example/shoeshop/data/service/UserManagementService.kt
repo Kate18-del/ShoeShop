@@ -1,4 +1,3 @@
-
 import ResendOTPResponse
 import SignInRequest
 import com.example.myfirstproject.data.model.SignInResponse
@@ -7,14 +6,10 @@ import com.example.myfirstproject.data.model.SignUpResponse
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.Header
-import retrofit2.http.Headers
-import retrofit2.http.POST
-import retrofit2.http.PUT
+import retrofit2.http.*
 
+const val API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZneWhydXlsYmlmdmx4bHl3YWJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NDc3NTgsImV4cCI6MjA4ODEyMzc1OH0.JoinvvEiL1IgvuM3-5nGJLDttWKUikEmrCb3biweAQw"
 
-const val API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrdmhybHF3YXh6aXRrY2prZmloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwNzgxNDQsImV4cCI6MjA4NDY1NDE0NH0.i5AAmY29ujNmXLXZiXXpYFH27SN7441TQct3LzizOn4"
 interface UserManagementService {
 
     @Headers(
@@ -44,8 +39,6 @@ interface UserManagementService {
     )
     @POST("auth/v1/verify")
     suspend fun verifyOtp(@Body verifyOtpRequest: VerifyOtpRequest): Response<VerifyOtpResponse>
-    @POST("auth/verify-recovery-otp")
-    suspend fun verifyRecoveryOtp(@Body request: VerifyOtpRequest): Response<VerifyOtpResponse>
 
     @Headers(
         "apikey: $API_KEY",
@@ -69,11 +62,18 @@ interface UserManagementService {
         "apikey: ${API_KEY}",
         "Content-Type: application/json"
     )
+    @POST("auth/v1/token?grant_type=refresh_token")
+    suspend fun refreshToken(
+        @Body request: Map<String, String>
+    ): Response<Map<String, Any>>
+
+    @Headers(
+        "apikey: ${API_KEY}",
+        "Content-Type: application/json"
+    )
     @PUT("auth/v1/user")
     suspend fun changePassword(
-        @Header("Authorization") token: String, // Bearer токен пользователя
+        @Header("Authorization") authorization: String, // Bearer токен
         @Body changePasswordRequest: ChangePasswordRequest
     ): Response<ChangePasswordResponse>
-
-
 }

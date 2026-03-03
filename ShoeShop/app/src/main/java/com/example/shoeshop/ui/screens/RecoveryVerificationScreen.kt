@@ -1,4 +1,5 @@
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -54,6 +55,7 @@ fun RecoveryVerificationScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
 
+
     // Для управления фокусом на каждом OTP поле
     val focusRequester1 = remember { FocusRequester() }
     val focusRequester2 = remember { FocusRequester() }
@@ -91,36 +93,40 @@ fun RecoveryVerificationScreen(
 
     // Обработка состояний проверки
     LaunchedEffect(verificationState) {
+        Log.d("DEBUG2", "verificationState изменился: $verificationState")
+
         when (verificationState) {
             is VerificationState.Success -> {
+                Log.d("DEBUG2", "Это Success")
+                Log.d("DEBUG2", "type: ${(verificationState as VerificationState.Success).type}")
+
                 when ((verificationState as VerificationState.Success).type) {
                     OtpType.RECOVERY -> {
-                        // Получаем reset token и переходим на экран сброса пароля
+                        Log.d("DEBUG2", "Это RECOVERY Success")
+
                         val resetToken = viewModel.getResetToken()
-                        if (!resetToken.isNullOrEmpty()) {
+                        Log.d("DEBUG2", "getResetToken() вернул: $resetToken")
+
+                        if (resetToken != null) {
+                            Log.d("DEBUG2", "resetToken НЕ null, вызываем onResetPasswordClick")
                             onResetPasswordClick(resetToken)
                         } else {
+                            Log.d("DEBUG2", "resetToken = null!")
                             showToast(context, "Ошибка: токен сброса не получен")
                         }
                         viewModel.resetState()
                     }
-                    OtpType.EMAIL -> {
-                        // Не должно происходить в этом экране
-                        showToast(context, "Неправильный тип OTP")
+                    else -> {
+                        Log.d("DEBUG2", "Другой тип: ${(verificationState as VerificationState.Success).type}")
                     }
                 }
             }
             is VerificationState.Error -> {
-                val errorMessage = (verificationState as VerificationState.Error).message
-                showToast(context, errorMessage)
-                // Очищаем OTP при ошибке
-                otpCode = ""
-                scope.launch {
-                    focusRequester1.requestFocus()
-                }
-                viewModel.resetState()
+                Log.d("DEBUG2", "Error: ${(verificationState as VerificationState.Error).message}")
             }
-            else -> {}
+            else -> {
+                Log.d("DEBUG2", "Другое состояние: $verificationState")
+            }
         }
     }
 

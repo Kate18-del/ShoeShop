@@ -49,14 +49,20 @@ fun NavigationApp(navController: NavHostController) {
         composable("reset_password") {
             RecoveryVerificationScreen(
                 onSignInClick = {navController.navigate("sign_in")},
-                onResetPasswordClick = {navController.navigate("create_password")}
+                onResetPasswordClick = { resetToken ->  // Токен приходит сюда
+                    // Передаем токен в маршрут
+                    navController.navigate("create_password/$resetToken")
+                }
 
             )
         }
 
-        composable("create_password") {
+        composable("create_password/{resetToken}") { backStackEntry ->
+            val resetToken = backStackEntry.arguments?.getString("resetToken") ?: ""
+
             CreateNewPasswordScreen(
-                onPasswordChanged = {navController.navigate("sign_in")}
+                userToken = resetToken,  // Передаем токен в экран
+                onPasswordChanged = { navController.navigate("sign_in") }
             )
         }
     }
