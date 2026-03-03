@@ -1,6 +1,7 @@
 package com.example.shoeshop.ui.screens
 
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -48,13 +49,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myfirstproject.data.model.SignUpRequest
 import com.example.myfirstproject.ui.viewModel.SignUpState
 import com.example.myfirstproject.ui.viewModel.SignUpViewModel
 import com.example.shoeshop.R
 import com.example.shoeshop.ui.components.BackButton
 import com.example.shoeshop.ui.components.DisableButton
+import com.example.shoeshop.ui.theme.AppTypography
 import com.example.shoeshop.ui.theme.ShoeShopTheme
 import java.util.regex.Pattern
 
@@ -67,16 +71,61 @@ fun RegisterAccount(modifier: Modifier = Modifier,
                     onBackClick: () -> Unit = {},
                     onRegisterClick: () -> Unit = {},
                     onLoginClick: () -> Unit = {},
+                    onSignInClick : () -> Unit = {} ,
+                    onSignUpClick : () -> Unit = {},
+                    viewModel: SignUpViewModel = viewModel()
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isChecked by remember { mutableStateOf(false) }
+    var pendingSignUpRequest by remember { mutableStateOf<SignUpRequest?>(null) }
+    val signUpState by viewModel.signUpState.collectAsStateWithLifecycle()
 
     // Состояние для диалога с ошибкой
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+
+    val sharedPreferences = remember {
+        context.getSharedPreferences("shoe_shop_prefs", Context.MODE_PRIVATE)
+    }
+
+    // Обработка состояний регистрации
+    LaunchedEffect(signUpState) {
+        when (signUpState) {
+            is SignUpState.Success -> {
+                // Сохраняем данные при успешной регистрации
+                saveUserDataToPreferences(sharedPreferences, name, email)
+                onSignUpClick()
+                viewModel.resetState()
+            }
+            is SignUpState.Error -> {
+                val error = (signUpState as SignUpState.Error)
+                errorMessage = error.message
+
+                // Показываем диалог только для определенных ошибок
+                val showDialog = when {
+                    error.message.contains("Too many requests", ignoreCase = true) -> true
+                    error.message.contains("rate limit", ignoreCase = true) -> true
+                    error.message.contains("network", ignoreCase = true) -> true
+                    error.message.contains("invalid", ignoreCase = true) -> true
+                    else -> true
+                }
+
+                if (showDialog) {
+                    showErrorDialog = true
+                } else {
+                    // Для других ошибок можно показать Snackbar или Toast
+                    // например, для ошибок валидации
+                }
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
 
     // Функция проверки email
     fun isValidEmail(email: String): Boolean {
@@ -385,9 +434,26 @@ fun RegisterAccount(modifier: Modifier = Modifier,
 
         // Кнопка регистрации
         DisableButton(
-            text = stringResource(id = R.string.register),
-            onClick = onRegisterClickWithValidation,
-            enabled = isFormValid  // Кнопка активна когда все поля заполнены, даже если email невалидный
+            text = stringResource(id = R.string.sign_up),
+            onClick = {
+                if (name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && isChecked) {
+                    val signUpRequest = SignUpRequest(email, password)
+                    pendingSignUpRequest = signUpRequest
+                    viewModel.signUp(signUpRequest)
+                } else {
+                    // Валидация полей
+                    errorMessage = when {
+                        name.isEmpty() -> "Please enter your name"
+                        email.isEmpty() -> "Please enter your email address"
+                        password.isEmpty() -> "Please enter your password"
+                        !isChecked -> "Please accept the terms and conditions"
+                        else -> "Please fill in all required fields"
+                    }
+                    showErrorDialog = true
+                }
+            },
+            enabled = name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && isChecked,
+            textStyle = AppTypography.bodyMedium16
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -454,6 +520,18 @@ fun RegisterAccount(modifier: Modifier = Modifier,
                 }
             },
         )
+    }
+}
+
+
+private fun saveUserDataToPreferences(
+    sharedPreferences: android.content.SharedPreferences,
+    name: String,
+    email: String
+) {
+    sharedPreferences.edit {
+        putString("user_name", name)
+        putString("user_email", email)
     }
 }
 

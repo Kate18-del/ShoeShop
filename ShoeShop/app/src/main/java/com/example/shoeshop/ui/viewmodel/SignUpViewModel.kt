@@ -17,16 +17,12 @@ class SignUpViewModel : ViewModel() {
 
     fun signUp(signUpRequest: SignUpRequest) {
         viewModelScope.launch {
-            _signUpState.value = SignUpState.Loading
             try {
-                Log.d("SignUpViewModel", "Attempting to sign up: ${signUpRequest.email}")
-
                 val response = RetrofitInstance.userManagementService.signUp(signUpRequest)
-
                 if (response.isSuccessful) {
                     response.body()?.let {
-                        Log.d("SignUpViewModel", "Sign up successful, user id: ${it.id}")
-                        _signUpState.value = SignUpState.Success(signUpRequest.email)
+                        Log.v("signUp", "User id: ${it.id}")
+                        _signUpState.value = SignUpState.Success
                     }
                 } else {
                     val errorMessage = when (response.code()) {
@@ -35,7 +31,6 @@ class SignUpViewModel : ViewModel() {
                         429 -> "Too many requests"
                         else -> "Registration failed: ${response.message()}"
                     }
-                    Log.e("SignUpViewModel", "Sign up failed: $errorMessage")
                     _signUpState.value = SignUpState.Error(errorMessage)
                 }
             } catch (e: Exception) {
@@ -45,7 +40,7 @@ class SignUpViewModel : ViewModel() {
                     else -> "Network error: ${e.message}"
                 }
                 _signUpState.value = SignUpState.Error(errorMessage)
-                Log.e("SignUpViewModel", "Sign up error: ${e.message}")
+                Log.e("SignUpViewModel", e.message.toString())
             }
         }
     }
@@ -57,7 +52,6 @@ class SignUpViewModel : ViewModel() {
 
 sealed class SignUpState {
     object Idle : SignUpState()
-    object Loading : SignUpState()
-    data class Success(val email: String) : SignUpState()  // Важно: data class с email
+    object Success : SignUpState()
     data class Error(val message: String) : SignUpState()
 }
