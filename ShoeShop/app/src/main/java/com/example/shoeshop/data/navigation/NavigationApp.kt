@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shoeshop.ui.screens.CreateNewPasswordScreen
 import com.example.shoeshop.ui.screens.ForgotPasswordScreen
+import com.example.shoeshop.ui.screens.HomeScreen
 import com.example.shoeshop.ui.screens.OnboardScreen
 import com.example.shoeshop.ui.screens.RegisterAccount
 import com.example.shoeshop.ui.screens.SignInScreen
@@ -71,6 +72,10 @@ fun NavigationApp(navController: NavHostController) {
             OnboardScreen (
                 onGetStartedClick = { navController.navigate("sign_up") },
             )
+        }
+
+        composable("home") {
+            HomeScreen({},{},{})
         }
     }
 }

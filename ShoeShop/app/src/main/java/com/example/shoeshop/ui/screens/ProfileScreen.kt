@@ -154,8 +154,7 @@ fun ProfileScreen() {
                 DisableButton(
                     text = "Сохранить",
                     onClick = {
-                        // Здесь логика сохранения данных
-                        // Например, вызов ViewModel для сохранения
+
                         isEditing = false
                     },
                     modifier = Modifier
