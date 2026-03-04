@@ -46,6 +46,7 @@ fun HomeScreen(
     onCartClick: () -> Unit,
     onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit = {},
+    onCatalogClick: (String) -> Unit,
     userId: String,
     token: String
 ) {
@@ -294,6 +295,9 @@ fun HomeScreen(
                                     selectedCategory = selectedCategory,
                                     onCategorySelected = { category ->
                                         selectedCategory = category
+                                        if (category == "Outdoor") {
+                                            onCatalogClick(category)
+                                        }
                                     }
                                 )
                             }
@@ -346,53 +350,7 @@ fun HomeScreen(
     }
 }
 
-@Composable
-private fun CategorySection(
-    categories: List<Category>,
-    selectedCategory: String,
-    onCategorySelected: (String) -> Unit
-) {
-    Column {
-        Text(
-            text = stringResource(id = R.string.categories),
-            style = AppTypography.bodyMedium16,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(categories) { category ->
-                CategoryChip(
-                    category = category.name,
-                    isSelected = selectedCategory == category.name,
-                    onClick = { onCategorySelected(category.name) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryChip(
-    category: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .clickable { onClick() }
-            .clip(RoundedCornerShape(16.dp)),
-        color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFF5F5F5),
-        contentColor = if (isSelected) Color.White else Color.Black
-    ) {
-        Text(
-            text = category,
-            style = AppTypography.bodyMedium16.copy(fontWeight = FontWeight.Medium),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-    }
-}
 
 @Composable
 private fun PopularSection(

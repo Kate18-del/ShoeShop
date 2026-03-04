@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.shoeshop.ui.screens.CatalogScreen
 import com.example.shoeshop.ui.screens.CreateNewPasswordScreen
 import com.example.shoeshop.ui.screens.ForgotPasswordScreen
 import com.example.shoeshop.ui.screens.HomeScreen
@@ -117,6 +118,10 @@ fun NavigationApp(navController: NavHostController) {
                     // Навигация в настройки
                     navController.navigate("settings")
                 },
+                onCatalogClick = {
+                    // Переходим в каталог с выбранной категорией
+                    navController.navigate("catalog/Outdoor")
+                },
                 userId = userId ?: "",  // Передаем userId из AuthManager
                 token = accessToken ?: "" // Передаем token из AuthManager
             )
@@ -161,6 +166,16 @@ fun NavigationApp(navController: NavHostController) {
         composable("settings") {
             // Экран настроек
             Text("Настройки")
+        }
+
+        composable("catalog/{category}") { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category") ?: "Все"
+            CatalogScreen(
+                initialCategory = category,
+                onProductClick = { product ->
+                    navController.navigate("product_detail/${product.id}")
+                }
+            )
         }
     }
 }

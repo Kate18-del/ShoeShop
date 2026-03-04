@@ -114,6 +114,28 @@ interface UserManagementService {
         @Header("apikey") apiKey: String = API_KEY,
         @Header("Prefer") prefer: String = "return=representation"
     ): Response<List<Profile>>
+
+    // ===== CATALOG METHODS =====
+
+    @GET("rest/v1/categories")
+    suspend fun getCategories(
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Category>>
+
+    @GET("rest/v1/products")
+    suspend fun getProducts(
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Product>>
+
+    @GET("rest/v1/products")
+    suspend fun getProductsByCategory(
+        @Query("category") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Product>>
+
 }
 
 
