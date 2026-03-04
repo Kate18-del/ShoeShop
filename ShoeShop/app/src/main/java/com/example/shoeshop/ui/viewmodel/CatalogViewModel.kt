@@ -16,17 +16,12 @@ import kotlin.collections.map
 
 data class CatalogState(
     val isLoading: Boolean = false,
-    val categories: List<Category> = listOf(
-        Category("Все", true),
-        Category("Outdoor", false),
-        Category("Tennis", false),
-        Category("Бег", false),
-        Category("Баскетбол", false)
-    ),
+    val categories: List<Category> = emptyList(),
     val allProducts: List<Product> = emptyList(),
     val bestSellers: List<Product> = emptyList(),
     val filteredProducts: List<Product> = emptyList(),
-    val selectedCategory: String = "Все",
+    val selectedCategoryId: String? = null,
+    val selectedCategoryName: String = "Все",
     val error: String? = null
 )
 
@@ -44,57 +39,8 @@ class CatalogViewModel : ViewModel() {
                 if (token != null) {
                     currentToken = token
                     loadCatalog()
-                } else {
-                    // Для превью загружаем тестовые данные
-                    loadMockData()
                 }
             }
-        }
-    }
-
-    private fun loadMockData() {
-        val mockProducts = listOf(
-            Product(
-                id = "1",
-                name = "Nike Air Max",
-                price = "P752.00",
-                originalPrice = "P850.00",
-                category = "BEST SELLER",
-                imageResId = com.example.shoeshop.R.drawable.nike_zoom_winflo_3_831561_001_mens_running_shoes_11550187236tiyyje6l87_prev_ui_3
-            ),
-            Product(
-                id = "2",
-                name = "Nike Air Force 1",
-                price = "P820.00",
-                originalPrice = "P900.00",
-                category = "BEST SELLER",
-                imageResId = com.example.shoeshop.R.drawable.nike_zoom_winflo_3_831561_001_mens_running_shoes_11550187236tiyyje6l87_prev_ui_3
-            ),
-            Product(
-                id = "3",
-                name = "Adidas Ultraboost",
-                price = "P680.00",
-                originalPrice = "P750.00",
-                category = "NEW",
-                imageResId = com.example.shoeshop.R.drawable.nike_zoom_winflo_3_831561_001_mens_running_shoes_11550187236tiyyje6l87_prev_ui_3
-            ),
-            Product(
-                id = "4",
-                name = "Puma RS-X",
-                price = "P520.00",
-                originalPrice = "P600.00",
-                category = "TRENDING",
-                imageResId = com.example.shoeshop.R.drawable.nike_zoom_winflo_3_831561_001_mens_running_shoes_11550187236tiyyje6l87_prev_ui_3
-            )
-        )
-
-        _state.update {
-            it.copy(
-                isLoading = false,
-                allProducts = mockProducts,
-                bestSellers = mockProducts.filter { it.category == "BEST SELLER" },
-                filteredProducts = mockProducts
-            )
         }
     }
 
@@ -103,12 +49,35 @@ class CatalogViewModel : ViewModel() {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // Здесь загрузка с сервера
-                // val categories = repository.getCategories(currentToken) ?: emptyList()
-                // val products = repository.getProducts(currentToken) ?: emptyList()
+                // Загружаем категории с сервера
+                val categories = repository.getCategories(currentToken) ?: emptyList()
 
-                // Пока используем мок-данные
-                loadMockData()
+                // Фильтруем категории - оставляем только Outdoor и Tennis
+                val filteredCategories = categories.filter { category ->
+                    category.title == "Outdoor" || category.title == "Tennis"
+                }
+
+                // Создаем категорию "Все" для UI
+                val allCategory = Category(id = "all", title = "Все", isSelected = true)
+
+                // Формируем список категорий для отображения
+                val displayCategories = listOf(allCategory) +
+                        filteredCategories.map { it.copy(isSelected = false) }
+
+                // Загружаем товары
+                val products = repository.getProducts(currentToken) ?: emptyList()
+
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        categories = displayCategories,
+                        allProducts = products,
+                        bestSellers = products.filter { product -> product.is_best_seller == true },
+                        filteredProducts = products,
+                        selectedCategoryId = "all",
+                        selectedCategoryName = "Все"
+                    )
+                }
 
             } catch (e: Exception) {
                 Log.e("CatalogViewModel", "Error loading catalog", e)
@@ -122,35 +91,43 @@ class CatalogViewModel : ViewModel() {
         }
     }
 
+    fun selectCategory(categoryName: String) {
+        val currentState = _state.value
+
+        // Находим выбранную категорию
+        val selectedCategory = currentState.categories.find { it.title == categoryName }
+
+        if (selectedCategory != null) {
+            // Обновляем isSelected для всех категорий
+            val updatedCategories = currentState.categories.map {
+                it.copy(isSelected = it.title == categoryName)
+            }
+
+            _state.update {
+                it.copy(
+                    categories = updatedCategories,
+                    selectedCategoryId = selectedCategory.id,
+                    selectedCategoryName = selectedCategory.title
+                )
+            }
+
+            // Фильтруем товары
+            if (selectedCategory.id == "all") {
+                _state.update { it.copy(filteredProducts = currentState.allProducts) }
+            } else {
+                viewModelScope.launch {
+                    val filtered = repository.getProductsByCategoryId(currentToken, selectedCategory.id)
+                    _state.update { it.copy(filteredProducts = filtered ?: emptyList()) }
+                }
+            }
+        }
+    }
+
     fun refresh() {
         loadCatalog()
     }
 
     fun clearError() {
         _state.update { it.copy(error = null) }
-    }
-
-    fun selectCategory(categoryName: String) {
-        val currentState = _state.value
-
-        // Обновляем isSelected для категорий
-        val updatedCategories = currentState.categories.map {
-            it.copy(isSelected = it.name == categoryName)
-        }
-
-        _state.update {
-            it.copy(
-                categories = updatedCategories,
-                selectedCategory = categoryName
-            )
-        }
-
-        // Фильтруем товары
-        if (categoryName == "Все") {
-            _state.update { it.copy(filteredProducts = currentState.allProducts) }
-        } else {
-            val filtered = currentState.allProducts.filter { it.category == categoryName }
-            _state.update { it.copy(filteredProducts = filtered) }
-        }
     }
 }

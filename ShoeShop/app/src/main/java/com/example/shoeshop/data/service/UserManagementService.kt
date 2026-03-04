@@ -131,7 +131,7 @@ interface UserManagementService {
 
     @GET("rest/v1/products")
     suspend fun getProductsByCategory(
-        @Query("category") filter: String,
+        @Query("category_id") filter: String,
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Product>>

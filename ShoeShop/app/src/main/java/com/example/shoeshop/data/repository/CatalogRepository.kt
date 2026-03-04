@@ -10,7 +10,6 @@ class CatalogRepository {
     private val service = RetrofitInstance.userManagementService
     private val tag = "CatalogRepository"
 
-    // Получить все категории
     suspend fun getCategories(token: String): List<Category>? {
         return try {
             Log.d(tag, "Loading categories")
@@ -31,7 +30,6 @@ class CatalogRepository {
         }
     }
 
-    // Получить все товары
     suspend fun getProducts(token: String): List<Product>? {
         return try {
             Log.d(tag, "Loading products")
@@ -52,19 +50,11 @@ class CatalogRepository {
         }
     }
 
-    // Получить бестселлеры
     suspend fun getBestSellers(token: String): List<Product>? {
         val allProducts = getProducts(token)
-        return allProducts?.filter { it.category == "BEST SELLER" }
+        return allProducts?.filter { it.is_best_seller == true }
     }
 
-    // Получить товары по категории
-    suspend fun getProductsByCategory(token: String, categoryName: String): List<Product>? {
-        val allProducts = getProducts(token)
-        return allProducts?.filter { it.category == categoryName }
-    }
-
-    // Получить товары по ID категории (если нужно)
     suspend fun getProductsByCategoryId(token: String, categoryId: String): List<Product>? {
         return try {
             Log.d(tag, "Loading products for category: $categoryId")

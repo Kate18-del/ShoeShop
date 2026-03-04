@@ -106,7 +106,7 @@ fun CatalogScreen(
                 item {
                     CategorySection(
                         categories = state.categories,
-                        selectedCategory = state.selectedCategory,
+                        selectedCategory = state.selectedCategoryName,
                         onCategorySelected = { category ->
                             viewModel.selectCategory(category)
                         }
@@ -126,7 +126,7 @@ fun CatalogScreen(
                 // Секция товаров
                 item {
                     ProductsSection(
-                        title = if (state.selectedCategory == "Все") "Все товары" else state.selectedCategory,
+                        title = if (state.selectedCategoryName == "Все") "Все товары" else state.selectedCategoryName,
                         products = state.filteredProducts,
                         onProductClick = onProductClick
                     )
@@ -216,9 +216,9 @@ fun CategorySection(
         ) {
             items(categories) { category ->
                 CategoryChip(
-                    name = category.name,
-                    isSelected = category.name == selectedCategory,
-                    onClick = { onCategorySelected(category.name) }
+                    name = category.title,
+                    isSelected = category.title == selectedCategory,
+                    onClick = { onCategorySelected(category.title) }
                 )
             }
         }
@@ -274,34 +274,7 @@ fun BestSellerSection(
     }
 }
 
-@Composable
-fun ProductsSection(
-    title: String,
-    products: List<Product>,
-    onProductClick: (Product) -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            style = AppTypography.bodyMedium16.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(products) { product ->
-                ProductCard(
-                    product = product,
-                    onProductClick = { onProductClick(product) }
-                )
-            }
-        }
-    }
-}
-
+// В ProductCard - обновите отображение
 @Composable
 fun ProductCard(
     product: Product,
@@ -334,7 +307,7 @@ fun ProductCard(
                 if (product.imageResId != null) {
                     Image(
                         painter = painterResource(id = product.imageResId),
-                        contentDescription = product.name,
+                        contentDescription = product.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -371,39 +344,50 @@ fun ProductCard(
 
             // Название товара
             Text(
-                text = product.name,
+                text = product.title,
                 style = AppTypography.bodyMedium14,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Категория
-            Text(
-                text = product.category,
-                style = AppTypography.bodyRegular12,
-                color = MaterialTheme.colorScheme.primary
-            )
+            // Категория (можно добавить название категории, если нужно)
+            // Для этого нужно загрузить соответствия id->title
 
             Spacer(modifier = Modifier.height(4.dp))
 
             // Цена
-            Row(
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = product.price,
-                    style = AppTypography.bodyMedium16.copy(
-                        fontWeight = FontWeight.Bold
-                    )
+            Text(
+                text = product.getFormattedPrice(),
+                style = AppTypography.bodyMedium16.copy(
+                    fontWeight = FontWeight.Bold
                 )
+            )
+        }
+    }
+}
 
-                Spacer(modifier = Modifier.width(4.dp))
+@Composable
+fun ProductsSection(
+    title: String,
+    products: List<Product>,
+    onProductClick: (Product) -> Unit
+) {
+    Column {
+        Text(
+            text = title,
+            style = AppTypography.bodyMedium16.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
 
-                Text(
-                    text = product.originalPrice,
-                    style = AppTypography.bodyRegular12,
-                    color = Color.Gray,
-                    textDecoration = TextDecoration.LineThrough
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(products) { product ->
+                ProductCard(
+                    product = product,
+                    onProductClick = { onProductClick(product) }
                 )
             }
         }

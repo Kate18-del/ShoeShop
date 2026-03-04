@@ -1,11 +1,17 @@
+import kotlinx.serialization.Serializable
 
 
+@Serializable
 data class Product(
     val id: String,
-    val name: String,
-    val price: String,
-    val originalPrice: String,
-    val category: String,
-    val imageUrl: String = "", // для URL из сети
-    val imageResId: Int? = null // для локальных ресурсов
-)
+    val title: String,
+    val category_id: String?,
+    val cost: Double,
+    val description: String,
+    val is_best_seller: Boolean? = false,
+    val imageUrl: String? = null,
+    val imageResId: Int? = null
+) {
+    // Для отображения в UI
+    fun getFormattedPrice(): String = "P${String.format("%.2f", cost)}"
+}
