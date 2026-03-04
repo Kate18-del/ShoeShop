@@ -299,7 +299,10 @@ fun ProfileScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6200EE)
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            disabledContentColor = Color.White.copy(alpha = 0.5f)
                         )
                     ) {
                         if (state.isSaving) {
