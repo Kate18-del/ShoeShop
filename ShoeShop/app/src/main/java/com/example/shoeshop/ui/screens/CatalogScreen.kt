@@ -350,8 +350,6 @@ fun ProductCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Категория (можно добавить название категории, если нужно)
-            // Для этого нужно загрузить соответствия id->title
 
             Spacer(modifier = Modifier.height(4.dp))
 
