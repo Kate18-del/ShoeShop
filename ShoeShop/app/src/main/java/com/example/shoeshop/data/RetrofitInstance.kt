@@ -10,12 +10,12 @@ import java.net.Proxy
 object RetrofitInstance {
     const val SUBABASE_URL = "https://fgyhruylbifvlxlywabx.supabase.co/"
 
-   // private val proxy= Proxy(Proxy.Type.HTTP, InetSocketAddress("10.207.106.59",3128))
+   private val proxy= Proxy(Proxy.Type.HTTP, InetSocketAddress("10.207.106.59",3128))
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
     private val client = OkHttpClient.Builder()
-      // .proxy(proxy)
+      .proxy(proxy)
         .addInterceptor(loggingInterceptor)
         .build()
 

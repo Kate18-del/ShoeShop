@@ -23,9 +23,18 @@ class SignInViewModel : ViewModel() {
                     SignInRequest(email, password)
                 )
 
+
                 if (response.isSuccessful) {
                     response.body()?.let { signInResponse ->
-                        // Сохраняем токен
+                        // ==== СОХРАНЯЕМ ТОКЕН В AUTHMANAGER ====
+                        AuthManager.setAuthData(
+                            userId = signInResponse.user.id,
+                            accessToken = signInResponse.access_token,
+                            refreshToken = signInResponse.refresh_token
+                        )
+                        // ====================================
+
+                        // Сохраняем токен (старые методы)
                         saveAuthToken(signInResponse.access_token)
                         saveRefreshToken(signInResponse.refresh_token)
                         saveUserData(signInResponse.user)
@@ -237,6 +246,12 @@ class SignInViewModel : ViewModel() {
     }
 }
 
+data class AuthData(
+    val userId: String,
+    val accessToken: String,
+    val refreshToken: String,
+    val email: String
+)
 sealed class SignInState {
     object Idle : SignInState()
     object Success : SignInState()

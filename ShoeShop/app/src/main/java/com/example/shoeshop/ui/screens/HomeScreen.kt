@@ -45,7 +45,9 @@ fun HomeScreen(
     onProductClick: (Product) -> Unit,
     onCartClick: () -> Unit,
     onSearchClick: () -> Unit,
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    userId: String,
+    token: String
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
 
@@ -336,7 +338,7 @@ fun HomeScreen(
                         }
                     }
                     3 -> {
-                        ProfileScreen()
+                        ProfileScreen(userId = userId, token=token)
                     }
                 }
             }
@@ -507,13 +509,3 @@ private fun PromotionsSection() {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HomeScreenPreview() {
-    HomeScreen(
-        onProductClick = {},
-        onCartClick = {},
-        onSearchClick = {},
-        onSettingsClick = {}
-    )
-}

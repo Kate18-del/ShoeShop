@@ -5,6 +5,7 @@ import com.example.myfirstproject.data.model.SignUpRequest
 import com.example.myfirstproject.data.model.SignUpResponse
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
+import com.example.shoeshop.data.model.UpdateProfileRequest
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -76,4 +77,43 @@ interface UserManagementService {
         @Header("Authorization") authorization: String, // Bearer токен
         @Body changePasswordRequest: ChangePasswordRequest
     ): Response<ChangePasswordResponse>
+
+
+    // ===== ПРОФИЛЬ =====
+
+    @GET("rest/v1/profiles")
+    suspend fun getProfile(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Profile>>
+
+    @POST("rest/v1/profiles")
+    suspend fun createProfile(
+        @Body profile: Profile,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Profile>>
+
+
+    @PATCH("rest/v1/profiles")
+    suspend fun updateProfile(
+        @Query("user_id") filter: String,
+        @Body updates: UpdateProfileRequest,  // ← Используем специальный data class
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Profile>>
+
+    @PATCH("rest/v1/profiles")
+    suspend fun updateProfileById(
+        @Query("id") filter: String,
+        @Body updates: UpdateProfileRequest,  // ← Используем специальный data class
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Profile>>
 }
+
+
