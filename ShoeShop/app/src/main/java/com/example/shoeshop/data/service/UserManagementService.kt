@@ -5,6 +5,7 @@ import com.example.myfirstproject.data.model.SignUpRequest
 import com.example.myfirstproject.data.model.SignUpResponse
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
+import com.example.shoeshop.data.model.Favorite
 import com.example.shoeshop.data.model.UpdateProfileRequest
 import retrofit2.Response
 import retrofit2.http.*
@@ -136,6 +137,37 @@ interface UserManagementService {
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Product>>
 
+
+    // ===== FAVORITE METHODS =====
+
+    @GET("rest/v1/favourite")
+    suspend fun getFavorites(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Favorite>>
+
+    @POST("rest/v1/favourite")
+    suspend fun addToFavorite(
+        @Body favorite: Map<String, String>,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Favorite>>
+
+    @DELETE("rest/v1/favourite")
+    suspend fun removeFromFavorite(
+        @Query("id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<Unit>
+
+    @GET("rest/v1/products")
+    suspend fun getProductById(
+        @Query("id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Product>>
 }
 
 
