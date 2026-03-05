@@ -3,9 +3,7 @@ package com.example.shoeshop.data.repository
 import android.util.Log
 import com.example.shoeshop.data.CartItem
 import com.example.shoeshop.data.RetrofitInstance
-import com.example.shoeshop.data.model.Order
-import com.example.shoeshop.data.model.OrderItem
-import com.example.shoeshop.data.model.Payment
+import com.example.shoeshop.data.model.*
 
 class CheckoutRepository {
 
@@ -47,16 +45,19 @@ class CheckoutRepository {
         return try {
             Log.d(tag, "Creating order for user: $userId")
 
-            val order = mapOf(
-                "user_id" to userId,
-                "email" to email,
-                "phone" to phone,
-                "address" to address,
-                "delivery_coast" to deliveryCost,
-                "status_id" to "970aed1e-549c-499b-a649-4bf3f9f93a01" // "Собираем"
+            // Преобразуем Double в Int (отбрасываем дробную часть или округляем)
+            val deliveryCostInt = deliveryCost.toInt() // 60.2 -> 60
+
+            val request = CreateOrderRequest(
+                user_id = userId,
+                email = email,
+                phone = phone,
+                address = address,
+                delivery_coast = deliveryCostInt, // Теперь Int
+                status_id = "970aed1e-549c-499b-a649-4bf3f9f93a01"
             )
 
-            val response = service.createOrder(order, "Bearer $token")
+            val response = service.createOrder(request, "Bearer $token")
 
             if (response.isSuccessful) {
                 val created = response.body()
@@ -78,13 +79,14 @@ class CheckoutRepository {
         return try {
             Log.d(tag, "Creating order items for order: $orderId")
 
+            // Используем data класс вместо Map
             val orderItems = cartItems.map { cartItem ->
-                mapOf(
-                    "order_id" to orderId,
-                    "product_id" to cartItem.cart.product_id,
-                    "title" to (cartItem.product?.title ?: ""),
-                    "coast" to (cartItem.product?.cost ?: 0.0),
-                    "count" to cartItem.cart.count
+                CreateOrderItemRequest(
+                    order_id = orderId,
+                    product_id = cartItem.cart.product_id,
+                    title = cartItem.product?.title ?: "",
+                    coast = cartItem.product?.cost ?: 0.0,
+                    count = cartItem.cart.count
                 )
             }
 

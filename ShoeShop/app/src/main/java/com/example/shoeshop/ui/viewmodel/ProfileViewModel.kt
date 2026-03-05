@@ -136,8 +136,7 @@ class ProfileViewModel : ViewModel() {
                         firstname = currentState.firstName,
                         lastname = currentState.lastName,
                         address = currentState.address,
-                        phone = currentState.phone,
-                        email = userEmail  // Добавляем email
+                        phone = currentState.phone
                     )
                     val createdProfile = repository.createProfile(newProfile, currentToken)
 

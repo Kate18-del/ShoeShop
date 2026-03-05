@@ -16,15 +16,6 @@ data class Order(
 )
 
 @Serializable
-data class Payment(
-    val id: String = "",
-    val created_at: String = "",
-    val user_id: String? = null,
-    val card_name: String? = null,
-    val card_number: String? = null
-)
-
-@Serializable
 data class OrderItem(
     val id: String = "",
     val created_at: String = "",
@@ -34,3 +25,13 @@ data class OrderItem(
     val order_id: Long? = null,
     val product_id: String? = null
 )
+
+@Serializable
+data class Payment(
+    val id: String = "",
+    val created_at: String = "",
+    val user_id: String? = null,
+    val card_name: String? = null,
+    val card_number: String? = null
+)
+

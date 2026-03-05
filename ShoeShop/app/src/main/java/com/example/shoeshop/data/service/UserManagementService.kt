@@ -7,6 +7,8 @@ import com.example.shoeshop.data.model.AddToCartRequest
 import com.example.shoeshop.data.model.Cart
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
+import com.example.shoeshop.data.model.CreateOrderItemRequest
+import com.example.shoeshop.data.model.CreateOrderRequest
 import com.example.shoeshop.data.model.Favorite
 import com.example.shoeshop.data.model.Order
 import com.example.shoeshop.data.model.OrderItem
@@ -220,7 +222,7 @@ interface UserManagementService {
 
     @POST("rest/v1/orders")
     suspend fun createOrder(
-        @Body order: Map<String, Any>,
+        @Body order: CreateOrderRequest,
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY,
         @Header("Prefer") prefer: String = "return=representation"
@@ -228,7 +230,7 @@ interface UserManagementService {
 
     @POST("rest/v1/orders_items")
     suspend fun createOrderItems(
-        @Body orderItems: List<Map<String, Any>>,
+        @Body orderItems: List<CreateOrderItemRequest>,
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY,
         @Header("Prefer") prefer: String = "return=representation"
@@ -242,6 +244,7 @@ interface UserManagementService {
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Payment>>
+
 }
 
 

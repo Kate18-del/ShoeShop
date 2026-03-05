@@ -76,15 +76,44 @@ fun CheckoutScreen(
 
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
+    // Состояние для отслеживания запроса локации
+    var isRequestingLocation by remember { mutableStateOf(false) }
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Вызываем функцию получения локации
-            getCurrentLocation(context, fusedLocationClient)
+            // Разрешение получено - запускаем получение локации
+            isRequestingLocation = true
         } else {
             Toast.makeText(context, "Разрешение на геолокацию отклонено", Toast.LENGTH_SHORT).show()
             CheckoutManager.setUseGPSLocation(false)
+        }
+    }
+
+    // Эффект для получения местоположения
+    LaunchedEffect(isRequestingLocation) {
+        if (isRequestingLocation) {
+            getCurrentLocation(
+                context = context,
+                fusedLocationClient = fusedLocationClient,
+                onLocationResult = { location ->
+                    if (location != null) {
+                        val lat = location.latitude
+                        val lng = location.longitude
+                        val addressText = String.format("%.6f, %.6f", lat, lng)
+
+                        CheckoutManager.setLocation(location)
+                        CheckoutManager.setUseGPSLocation(true)
+
+                        Toast.makeText(context, "Местоположение получено: $addressText", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Не удалось получить местоположение", Toast.LENGTH_SHORT).show()
+                        CheckoutManager.setUseGPSLocation(false)
+                    }
+                    isRequestingLocation = false
+                }
+            )
         }
     }
 
@@ -199,16 +228,28 @@ fun CheckoutScreen(
         ) {
             item {
                 ContactInfoSection(
-                    email = email,
-                    phone = phone,
+                    email = if (isEditingEmail) tempEmail else email,
+                    phone = if (isEditingPhone) tempPhone else phone,
                     isEditingEmail = isEditingEmail,
                     isEditingPhone = isEditingPhone,
-                    onEditEmailClick = { CheckoutManager.toggleEditEmail() },
-                    onEditPhoneClick = { CheckoutManager.toggleEditPhone() },
+                    onEditEmailClick = {
+                        tempEmail = email
+                        CheckoutManager.toggleEditEmail()
+                    },
+                    onEditPhoneClick = {
+                        tempPhone = phone
+                        CheckoutManager.toggleEditPhone()
+                    },
                     onEmailChange = { tempEmail = it },
                     onPhoneChange = { tempPhone = it },
-                    onSaveEmail = { CheckoutManager.saveEmail(tempEmail) },
-                    onSavePhone = { CheckoutManager.savePhone(tempPhone) }
+                    onSaveEmail = {
+                        CheckoutManager.saveEmail(tempEmail)
+                        CheckoutManager.toggleEditEmail()
+                    },
+                    onSavePhone = {
+                        CheckoutManager.savePhone(tempPhone)
+                        CheckoutManager.toggleEditPhone()
+                    }
                 )
             }
 
@@ -218,8 +259,16 @@ fun CheckoutScreen(
                     useGPS = useGPSLocation,
                     onUseGPSClick = {
                         if (!useGPSLocation) {
-                            // Вызываем функцию получения локации
-                            getCurrentLocation(context, fusedLocationClient)
+                            when {
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+                                    // Разрешение уже есть - запускаем получение локации
+                                    isRequestingLocation = true
+                                }
+                                else -> {
+                                    // Запрашиваем разрешение
+                                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                }
+                            }
                         } else {
                             CheckoutManager.setUseGPSLocation(false)
                         }
@@ -287,23 +336,53 @@ fun CheckoutScreen(
     }
 }
 
-// ВЫНОСИМ ФУНКЦИЮ ЗА ПРЕДЕЛЫ COMPOSABLE
+// Обычная функция (не composable) для получения местоположения
 private fun getCurrentLocation(
     context: android.content.Context,
-    fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient
+    fusedLocationClient: com.google.android.gms.location.FusedLocationProviderClient,
+    onLocationResult: (Location?) -> Unit
 ) {
-    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if (location != null) {
-                CheckoutManager.setLocation(location)
-                CheckoutManager.setUseGPSLocation(true)
-                Toast.makeText(context, "Местоположение получено", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Не удалось получить местоположение. Попробуйте включить GPS", Toast.LENGTH_SHORT).show()
-            }
-        }.addOnFailureListener { e ->
-            Toast.makeText(context, "Ошибка получения местоположения: ${e.message}", Toast.LENGTH_SHORT).show()
+    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        onLocationResult(null)
+        return
+    }
+
+    val locationRequest = com.google.android.gms.location.LocationRequest.create().apply {
+        priority = com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY
+        interval = 0
+        fastestInterval = 0
+        numUpdates = 1
+    }
+
+    val locationCallback = object : com.google.android.gms.location.LocationCallback() {
+        override fun onLocationResult(locationResult: com.google.android.gms.location.LocationResult) {
+            onLocationResult(locationResult.lastLocation)
+            fusedLocationClient.removeLocationUpdates(this)
         }
+
+        override fun onLocationAvailability(availability: com.google.android.gms.location.LocationAvailability) {
+            if (!availability.isLocationAvailable) {
+                onLocationResult(null)
+                fusedLocationClient.removeLocationUpdates(this)
+            }
+        }
+    }
+
+    try {
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            context.mainLooper
+        )
+
+        // Таймаут на случай, если локация не получена
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            onLocationResult(null)
+        }, 10000)
+
+    } catch (e: SecurityException) {
+        onLocationResult(null)
     }
 }
 
@@ -352,12 +431,15 @@ fun ContactInfoSection(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 if (isEditingEmail) {
+                    // Режим редактирования
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
                         OutlinedTextField(
                             value = email,
-                            onValueChange = onEmailChange,
+                            onValueChange = { newValue ->
+                                onEmailChange(newValue) // Обновляем при каждом изменении
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("Email") },
                             singleLine = true,
@@ -375,6 +457,7 @@ fun ContactInfoSection(
                         }
                     }
                 } else {
+                    // Режим просмотра
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -389,9 +472,7 @@ fun ContactInfoSection(
                             color = Color.Gray
                         )
                     }
-                }
 
-                if (!isEditingEmail) {
                     IconButton(onClick = onEditEmailClick) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -420,12 +501,15 @@ fun ContactInfoSection(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 if (isEditingPhone) {
+                    // Режим редактирования
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
                         OutlinedTextField(
                             value = phone,
-                            onValueChange = onPhoneChange,
+                            onValueChange = { newValue ->
+                                onPhoneChange(newValue) // Обновляем при каждом изменении
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text("Телефон") },
                             singleLine = true,
@@ -443,6 +527,7 @@ fun ContactInfoSection(
                         }
                     }
                 } else {
+                    // Режим просмотра
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -457,9 +542,7 @@ fun ContactInfoSection(
                             color = Color.Gray
                         )
                     }
-                }
 
-                if (!isEditingPhone) {
                     IconButton(onClick = onEditPhoneClick) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -602,7 +685,7 @@ fun PaymentSection() {
                     }
                 }
 
-                TextButton(onClick = { /* Добавить новый способ */ }) {
+                TextButton(onClick = {  }) {
                     Text(
                         text = "Добавить",
                         color = MaterialTheme.colorScheme.primary
@@ -774,10 +857,11 @@ fun SuccessOrderDialog(
                         .background(Color(0xFF4CAF50).copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "✓",
-                        fontSize = 40.sp,
-                        color = Color(0xFF4CAF50)
+                    Image(
+                       painter = painterResource(id = R.drawable.wow),
+                        contentDescription = null,
+                        modifier = Modifier.size(70.dp),
+
                     )
                 }
 

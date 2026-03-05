@@ -83,4 +83,20 @@ object CheckoutManager {
         _isEditingPhone.value = false
         _useGPSLocation.value = false
     }
+
+    fun startEditingEmail() {
+        _isEditingEmail.value = true
+    }
+
+    fun startEditingPhone() {
+        _isEditingPhone.value = true
+    }
+
+    fun cancelEditingEmail() {
+        _isEditingEmail.value = false
+    }
+
+    fun cancelEditingPhone() {
+        _isEditingPhone.value = false
+    }
 }
