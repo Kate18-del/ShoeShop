@@ -26,21 +26,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.shoeshop.R
 import com.example.shoeshop.data.OrderManager
+import com.example.shoeshop.data.model.Order
 import com.example.shoeshop.data.model.OrderWithItems
 import com.example.shoeshop.data.repository.OrderRepository
-import com.example.shoeshop.ui.theme.AppTypography
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,9 +131,7 @@ fun OrdersScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Для каждой группы заказов
                 groupedOrders.forEach { group ->
-                    // Заголовок группы
                     item {
                         Text(
                             text = group.date,
@@ -144,14 +141,9 @@ fun OrdersScreen(
                         )
                     }
 
-                    // Заказы в группе
                     items(group.orders) { orderWithItems ->
-                        val offsetX = swipeStates[orderWithItems.order.id] ?: 0f
-
                         SwipeableOrderCard(
                             orderWithItems = orderWithItems,
-                            offsetX = offsetX,
-                            onOffsetChange = { swipeStates[orderWithItems.order.id] = it },
                             onRepeat = {
                                 scope.launch {
                                     val success = orderRepository.repeatOrder(
@@ -163,7 +155,6 @@ fun OrdersScreen(
                                         Toast.makeText(context, "Заказ повторен", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                                swipeStates[orderWithItems.order.id] = 0f
                             },
                             onCancel = {
                                 scope.launch {
@@ -176,7 +167,6 @@ fun OrdersScreen(
                                         Toast.makeText(context, "Заказ отменен", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                                swipeStates[orderWithItems.order.id] = 0f
                             },
                             onClick = { onOrderClick(orderWithItems.order.id) }
                         )
@@ -190,48 +180,21 @@ fun OrdersScreen(
 @Composable
 fun SwipeableOrderCard(
     orderWithItems: OrderWithItems,
-    offsetX: Float,
-    onOffsetChange: (Float) -> Unit,
     onRepeat: () -> Unit,
     onCancel: () -> Unit,
     onClick: () -> Unit
 ) {
     val order = orderWithItems.order
     val firstItem = orderWithItems.items.firstOrNull()
+    val product = firstItem?.product
+    var offsetX by remember { mutableStateOf(0f) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(120.dp)
     ) {
-        // Правая кнопка (отмена) - свайп влево
-        if (offsetX < -20) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 100.dp)
-                    .background(Color.Red.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-                    .zIndex(0f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(
-                    onClick = onCancel,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(Color.White, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Отменить",
-                        tint = Color.Red,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-
-        // Левая кнопка (повторить) - свайп вправо
+        // Левая панель с кнопкой повтора (свайп вправо)
         if (offsetX > 20) {
             Row(
                 modifier = Modifier
@@ -243,7 +206,10 @@ fun SwipeableOrderCard(
                 horizontalArrangement = Arrangement.Start
             ) {
                 IconButton(
-                    onClick = onRepeat,
+                    onClick = {
+                        onRepeat()
+                        offsetX = 0f
+                    },
                     modifier = Modifier
                         .size(48.dp)
                         .background(Color.White, CircleShape)
@@ -258,22 +224,52 @@ fun SwipeableOrderCard(
             }
         }
 
+        // Правая панель с кнопкой отмены (свайп влево)
+        if (offsetX < -20) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 100.dp)
+                    .background(Color.Red.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                    .zIndex(0f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = {
+                        onCancel()
+                        offsetX = 0f
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Отменить",
+                        tint = Color.Red,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+
         // Карточка заказа
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp)
+                .height(120.dp)
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             if (abs(offsetX) < 80) {
-                                onOffsetChange(0f)
+                                offsetX = 0f
                             }
                         }
                     ) { change, dragAmount ->
                         change.consume()
-                        onOffsetChange((offsetX + dragAmount).coerceIn(-150f, 150f))
+                        offsetX = (offsetX + dragAmount).coerceIn(-150f, 150f)
                     }
                 }
                 .clickable { onClick() }
@@ -290,36 +286,86 @@ fun SwipeableOrderCard(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Номер заказа и время
+                // Картинка товара
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5))
+                ) {
+                    if (product?.imageResId != null && product.imageResId != 0) {
+                        Image(
+                            painter = painterResource(id = product.imageResId),
+                            contentDescription = product.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        // Заглушка
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "👟",
+                                fontSize = 40.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Информация о заказе
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = "№ ${order.id}",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "N° ${order.id}    ${order.getFormattedTimeAgo()}",
+                        fontSize = 14.sp,
+                        color = Color.Gray
                     )
-                   // Text(
-                   //     text = order.getFormattedTime(),
-                   //     fontSize = 12.sp,
-                   //     color = Color.Gray
-                  //  )
-                }
 
-                // Информация о товаре
-                if (firstItem != null) {
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    if (firstItem != null) {
                         Text(
                             text = firstItem.title ?: "",
-                            fontSize = 14.sp,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+
+                        if (orderWithItems.items.size > 1) {
+                            Text(
+                                text = "и ещё ${orderWithItems.items.size - 1} товар(а)",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Цена
+                    val totalPrice = orderWithItems.items.sumOf { (it.coast ?: 0.0) * (it.count ?: 1) }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (orderWithItems.items.size == 1 && firstItem?.coast != null) {
+                            Text(
+                                text = "₽${String.format("%.2f", firstItem.coast)}",
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                textDecoration = TextDecoration.LineThrough
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
                         Text(
-                            text = formatPrice(firstItem.coast ?: 0.0),
-                            fontSize = 14.sp,
+                            text = "₽${String.format("%.2f", totalPrice)}",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -329,3 +375,24 @@ fun SwipeableOrderCard(
         }
     }
 }
+
+// Вспомогательная функция
+fun Order.getFormattedTimeAgo(): String {
+    return try {
+        val orderTime = java.time.OffsetDateTime.parse(created_at)
+        val now = java.time.OffsetDateTime.now()
+        val minutes = java.time.Duration.between(orderTime, now).toMinutes()
+
+        when {
+            minutes < 1 -> "только что"
+            minutes < 60 -> "$minutes мин назад"
+            minutes < 120 -> "1 час назад"
+            minutes < 1440 -> "${minutes / 60} часов назад"
+            else -> "${minutes / 1440} дней назад"
+        }
+    } catch (e: Exception) {
+        ""
+    }
+}
+
+

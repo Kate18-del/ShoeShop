@@ -50,6 +50,7 @@ import java.util.Locale
 fun ProfileScreen(
     userId: String,
     token: String,
+    onOrdersClick: () -> Unit,
     viewModel: ProfileViewModel = viewModel()
 ) {
     // Инициализируем ViewModel с данными пользователя

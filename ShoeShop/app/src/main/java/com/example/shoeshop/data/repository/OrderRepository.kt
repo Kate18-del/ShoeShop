@@ -1,5 +1,6 @@
 package com.example.shoeshop.data.repository
 
+import Product
 import android.util.Log
 import com.example.shoeshop.data.RetrofitInstance
 import com.example.shoeshop.data.model.*
@@ -74,7 +75,26 @@ class OrderRepository {
         }
     }
 
-    // Получить заказы с позициями
+    // Получить продукт по ID
+    private suspend fun getProductById(productId: String, token: String): Product? {
+        return try {
+            Log.d(tag, "Getting product by id: $productId")
+            val filter = "eq.$productId"
+            val response = service.getProducts(filter, "Bearer $token")
+
+            if (response.isSuccessful) {
+                val products = response.body()
+                products?.firstOrNull()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(tag, "Exception in getProductById", e)
+            null
+        }
+    }
+
+    // Получить заказы с позициями и продуктами
     suspend fun getOrdersWithItems(userId: String, token: String): List<OrderWithItems> {
         val orders = getUserOrders(userId, token) ?: return emptyList()
 
@@ -82,13 +102,20 @@ class OrderRepository {
 
         for (order in orders) {
             val items = getOrderItems(order.id, token) ?: emptyList()
-            result.add(OrderWithItems(order, items))
+
+            // Для каждого товара загружаем продукт (для картинки)
+            val itemsWithProducts = items.map { item ->
+                val product = getProductById(item.product_id ?: "", token)
+                item.copy(product = product)
+            }
+
+            result.add(OrderWithItems(order, itemsWithProducts))
         }
 
         return result
     }
 
-    // Отменить заказ (просто помечаем как отмененный)
+    // Отменить заказ
     suspend fun cancelOrder(orderId: Long, token: String): Boolean {
         return try {
             Log.d(tag, "Cancelling order: $orderId")
@@ -132,7 +159,7 @@ class OrderRepository {
                 phone = oldOrder.phone ?: "",
                 address = oldOrder.address ?: "",
                 delivery_coast = oldOrder.delivery_coast?.toInt() ?: 60,
-                status_id = "970aed1e-549c-499b-a649-4bf3f9f93a01" // "Собираем"
+                status_id = "970aed1e-549c-499b-a649-4bf3f9f93a01"
             )
 
             val orderResponse = service.createOrder(createOrderRequest, "Bearer $token")

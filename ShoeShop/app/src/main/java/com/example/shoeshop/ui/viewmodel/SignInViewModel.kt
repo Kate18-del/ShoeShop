@@ -24,15 +24,14 @@ class SignInViewModel : ViewModel() {
                     SignInRequest(email, password)
                 )
 
-
                 if (response.isSuccessful) {
                     response.body()?.let { signInResponse ->
-                        // Сохраняем в AuthManager с email
+                        // Сохраняем данные в AuthManager
                         AuthManager.setAuthData(
                             userId = signInResponse.user.id,
                             accessToken = signInResponse.access_token,
                             refreshToken = signInResponse.refresh_token,
-                            email = signInResponse.user.email // Добавляем email
+                            email = signInResponse.user.email
                         )
 
                         Log.v("signIn", "User authenticated: ${signInResponse.user.email}")

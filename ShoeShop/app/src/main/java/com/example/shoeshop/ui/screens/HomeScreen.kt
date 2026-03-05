@@ -45,6 +45,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit = {},
     onCatalogClick: (String) -> Unit,
     onFavoriteClick: () -> Unit,
+    onOrdersClick: () -> Unit, // Добавляем параметр для заказов
     userId: String,
     token: String
 ) {
@@ -172,10 +173,15 @@ fun HomeScreen(
                     }
 
                     Row {
-                        IconButton(onClick = { selected = 2 }) {
+                        IconButton(onClick = {
+                            selected = 2
+                            println("🟢 HomeScreen: Calling onOrdersClick")
+                            onOrdersClick() // Переход к заказам
+                            println("🟢 HomeScreen: onOrdersClick completed")
+                        }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.notification),
-                                contentDescription = "Notification",
+                                painter = painterResource(id = R.drawable.orders),
+                                contentDescription = "Orders",
                                 tint = if (selected == 2) MaterialTheme.colorScheme.primary else Color.Black
                             )
                         }
@@ -341,18 +347,15 @@ fun HomeScreen(
                         Box(modifier = Modifier.fillMaxSize())
                     }
                     2 -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Уведомления",
-                                style = AppTypography.headingRegular32
-                            )
-                        }
+                        // Теперь здесь пусто, так как мы переходим на экран заказов
+                        Box(modifier = Modifier.fillMaxSize())
                     }
                     3 -> {
-                        ProfileScreen(userId = userId, token = token)
+                        ProfileScreen(
+                            userId = userId,
+                            token = token,
+                            onOrdersClick = onOrdersClick
+                        )
                     }
                 }
             }
@@ -405,8 +408,6 @@ private fun PopularSection(
         }
     }
 }
-
-
 
 @Composable
 private fun PromotionsSection() {

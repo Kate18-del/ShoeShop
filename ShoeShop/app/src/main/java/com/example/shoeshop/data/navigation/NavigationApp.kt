@@ -20,6 +20,8 @@ import com.example.shoeshop.ui.screens.FavoriteScreen
 import com.example.shoeshop.ui.screens.ForgotPasswordScreen
 import com.example.shoeshop.ui.screens.HomeScreen
 import com.example.shoeshop.ui.screens.OnboardScreen
+import com.example.shoeshop.ui.screens.OrderDetailScreen
+import com.example.shoeshop.ui.screens.OrdersScreen
 import com.example.shoeshop.ui.screens.ProfileScreen
 import com.example.shoeshop.ui.screens.RegisterAccount
 import com.example.shoeshop.ui.screens.SignInScreen
@@ -29,9 +31,17 @@ import com.example.shoeshop.ui.screens.SignInScreen
 fun NavigationApp(navController: NavHostController) {
 
     // Получаем состояние авторизации из AuthManager
-    val isAuthenticated by AuthManager.isAuthenticated.collectAsState()
-    val userId by AuthManager.userId.collectAsState()
-    val accessToken by AuthManager.accessToken.collectAsState()
+    val isAuthenticated by AuthManager.isAuthenticated.collectAsState(initial = false)
+    val userId by AuthManager.userId.collectAsState(initial = null)
+    val accessToken by AuthManager.accessToken.collectAsState(initial = null)
+    val userEmail by AuthManager.email.collectAsState(initial = null)
+
+    // Логируем для отладки
+    LaunchedEffect(isAuthenticated, userId, accessToken, userEmail) {
+        println("🔥 NavigationApp - isAuthenticated: $isAuthenticated")
+        println("🔥 NavigationApp - userId: $userId")
+        println("🔥 NavigationApp - token exists: ${accessToken != null}")
+    }
 
     // Логируем для отладки
     LaunchedEffect(isAuthenticated, userId, accessToken) {
@@ -108,50 +118,83 @@ fun NavigationApp(navController: NavHostController) {
         composable("home") {
             HomeScreen(
                 onProductClick = { product ->
-                    // Навигация на детали товара
                     navController.navigate("product_detail/${product.id}")
                 },
                 onCartClick = {
-                    // Навигация в корзину
                     navController.navigate("cart")
                 },
                 onSearchClick = {
-                    // Навигация на поиск
                     navController.navigate("search")
                 },
                 onSettingsClick = {
-                    // Навигация в настройки
                     navController.navigate("settings")
                 },
-                onCatalogClick = {
-                    // Переходим в каталог с выбранной категорией
-                    navController.navigate("catalog/Outdoor")
+                onCatalogClick = { category ->
+                    navController.navigate("catalog/$category")
                 },
                 onFavoriteClick = {
                     navController.navigate("favorite")
                 },
-                userId = userId ?: "",  // Передаем userId из AuthManager
-                token = accessToken ?: "" // Передаем token из AuthManager
+                onOrdersClick = { // Добавляем переход к заказам
+                    navController.navigate("orders")
+                },
+                userId = userId ?: "",
+                token = accessToken ?: ""
             )
         }
 
-        // ЭКРАН ПРОФИЛЯ - берем данные из AuthManager
+        // ЭКРАН ПРОФИЛЯ
         composable("profile") {
-            // Проверяем, есть ли данные авторизации
             if (userId != null && accessToken != null) {
-                println("✅ Передаем в ProfileScreen - userId: $userId, token: ${accessToken?.take(20)}...")
                 ProfileScreen(
                     userId = userId!!,
-                    token = accessToken!!
+                    token = accessToken!!,
+                    onOrdersClick = { // Добавляем переход к заказам из профиля
+                        navController.navigate("orders")
+                    }
                 )
             } else {
-                println("❌ Нет данных авторизации, редирект на вход")
                 LaunchedEffect(Unit) {
                     navController.navigate("sign_in") {
                         popUpTo("profile") { inclusive = true }
                     }
                 }
             }
+        }
+
+        composable("orders") {
+            val currentUserId by AuthManager.userId.collectAsState(initial = null)
+            val currentToken by AuthManager.accessToken.collectAsState(initial = null)
+
+            println("📱 Navigation to orders - userId: $currentUserId, token exists: ${currentToken != null}")
+
+            if (currentUserId != null && currentToken != null) {
+                OrdersScreen(
+                    userId = currentUserId!!,
+                    token = currentToken!!,
+                    onBackClick = { navController.popBackStack() },
+                    onOrderClick = { orderId ->
+                        navController.navigate("order_detail/$orderId")
+                    }
+                )
+            }
+        }
+
+        // ЭКРАН ДЕТАЛЕЙ ЗАКАЗА
+        composable("order_detail/{orderId}") { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId")?.toLongOrNull() ?: 0L
+            val currentUserId by AuthManager.userId.collectAsState(initial = null)
+            val currentToken by AuthManager.accessToken.collectAsState(initial = null)
+
+            if (currentUserId != null && currentToken != null) {
+                OrderDetailScreen(
+                    orderId = orderId,
+                    userId = currentUserId!!,
+                    token = currentToken!!,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
         }
 
         // Добавьте другие экраны по необходимости

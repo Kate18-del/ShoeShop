@@ -12,7 +12,6 @@ import com.example.shoeshop.data.model.CreateOrderRequest
 import com.example.shoeshop.data.model.Favorite
 import com.example.shoeshop.data.model.Order
 import com.example.shoeshop.data.model.OrderItem
-import com.example.shoeshop.data.model.OrderStatus
 import com.example.shoeshop.data.model.Payment
 import com.example.shoeshop.data.model.UpdateCartRequest
 import com.example.shoeshop.data.model.UpdateProfileRequest
@@ -263,16 +262,11 @@ interface UserManagementService {
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<OrderItem>>
 
-    @GET("rest/v1/order_status")
-    suspend fun getOrderStatuses(
-        @Header("Authorization") authorization: String,
-        @Header("apikey") apiKey: String = API_KEY
-    ): Response<List<OrderStatus>>
 
     @PATCH("rest/v1/orders")
     suspend fun updateOrderStatus(
         @Query("id") filter: String,
-        @Body updates: Map<String, Any>,
+        @Body updates: Map<String, String>,
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Order>>

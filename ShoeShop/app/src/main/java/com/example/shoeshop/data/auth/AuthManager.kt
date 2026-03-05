@@ -15,7 +15,7 @@ object AuthManager {
     private val _refreshToken = MutableStateFlow<String?>(null)
     val refreshToken: StateFlow<String?> = _refreshToken.asStateFlow()
 
-    private val _email = MutableStateFlow<String?>(null)  // Добавляем email
+    private val _email = MutableStateFlow<String?>(null)
     val email: StateFlow<String?> = _email.asStateFlow()
 
     private val _isAuthenticated = MutableStateFlow(false)
@@ -25,13 +25,17 @@ object AuthManager {
         Log.d("AuthManager", "=== SETTING AUTH DATA ===")
         Log.d("AuthManager", "userId: $userId")
         Log.d("AuthManager", "email: $email")
-        Log.d("AuthManager", "accessToken: ${accessToken.take(30)}...")
+        Log.d("AuthManager", "accessToken exists: ${accessToken.isNotEmpty()}")
 
         _userId.value = userId
         _accessToken.value = accessToken
         _refreshToken.value = refreshToken
-        _email.value = email  // Сохраняем email
+        _email.value = email
         _isAuthenticated.value = true
+
+        // Проверяем, что данные сохранились
+        Log.d("AuthManager", "After set - userId: ${_userId.value}")
+        Log.d("AuthManager", "After set - token exists: ${_accessToken.value != null}")
     }
 
     fun clearAuthData() {
@@ -41,13 +45,6 @@ object AuthManager {
         _refreshToken.value = null
         _email.value = null
         _isAuthenticated.value = false
-    }
-
-    fun getAuthHeaders(): Map<String, String> {
-        val token = _accessToken.value
-        return mapOf(
-            "Authorization" to "Bearer ${token.orEmpty()}"
-        )
     }
 
     fun printCurrentState() {

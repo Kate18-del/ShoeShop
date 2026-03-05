@@ -1,5 +1,6 @@
 package com.example.shoeshop.data.model
 
+import Product
 import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -73,7 +74,8 @@ data class OrderItem(
     val coast: Double? = null,
     val count: Int? = null,
     val order_id: Long? = null,
-    val product_id: String? = null
+    val product_id: String? = null,
+    var product: Product? = null // Добавляем поле для продукта
 )
 
 @Serializable
