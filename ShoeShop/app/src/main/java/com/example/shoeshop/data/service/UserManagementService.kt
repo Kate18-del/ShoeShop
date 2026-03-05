@@ -12,6 +12,7 @@ import com.example.shoeshop.data.model.CreateOrderRequest
 import com.example.shoeshop.data.model.Favorite
 import com.example.shoeshop.data.model.Order
 import com.example.shoeshop.data.model.OrderItem
+import com.example.shoeshop.data.model.OrderStatus
 import com.example.shoeshop.data.model.Payment
 import com.example.shoeshop.data.model.UpdateCartRequest
 import com.example.shoeshop.data.model.UpdateProfileRequest
@@ -244,6 +245,45 @@ interface UserManagementService {
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Payment>>
+
+// ===== ORDER METHODS (дополнительные) =====
+
+    @GET("rest/v1/orders")
+    suspend fun getUserOrders(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "order=created_at.desc"
+    ): Response<List<Order>>
+
+    @GET("rest/v1/orders_items")
+    suspend fun getOrderItems(
+        @Query("order_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<OrderItem>>
+
+    @GET("rest/v1/order_status")
+    suspend fun getOrderStatuses(
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<OrderStatus>>
+
+    @PATCH("rest/v1/orders")
+    suspend fun updateOrderStatus(
+        @Query("id") filter: String,
+        @Body updates: Map<String, Any>,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Order>>
+
+    // Для получения одного заказа с фильтром по id
+    @GET("rest/v1/orders")
+    suspend fun getOrderById(
+        @Query("id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Order>>
 
 }
 
