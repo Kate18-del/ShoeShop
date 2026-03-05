@@ -8,6 +8,9 @@ import com.example.shoeshop.data.model.Cart
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
 import com.example.shoeshop.data.model.Favorite
+import com.example.shoeshop.data.model.Order
+import com.example.shoeshop.data.model.OrderItem
+import com.example.shoeshop.data.model.Payment
 import com.example.shoeshop.data.model.UpdateCartRequest
 import com.example.shoeshop.data.model.UpdateProfileRequest
 import retrofit2.Response
@@ -205,6 +208,40 @@ interface UserManagementService {
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<Unit>
+
+    // ===== ORDER METHODS =====
+
+    @GET("rest/v1/orders")
+    suspend fun getOrders(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Order>>
+
+    @POST("rest/v1/orders")
+    suspend fun createOrder(
+        @Body order: Map<String, Any>,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Order>>
+
+    @POST("rest/v1/orders_items")
+    suspend fun createOrderItems(
+        @Body orderItems: List<Map<String, Any>>,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<OrderItem>>
+
+// ===== PAYMENT METHODS =====
+
+    @GET("rest/v1/payments")
+    suspend fun getPayments(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Payment>>
 }
 
 

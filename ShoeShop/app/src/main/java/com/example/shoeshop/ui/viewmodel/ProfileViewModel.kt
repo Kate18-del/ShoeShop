@@ -6,6 +6,7 @@ import Profile
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shoeshop.data.AuthManager
 import com.example.shoeshop.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -127,13 +128,16 @@ class ProfileViewModel : ViewModel() {
                         onComplete(false, "Ошибка при обновлении")
                     }
                 } else {
-                    // Создаем новый профиль
+                    // Создаем новый профиль - нужно получить email из AuthManager
+                    val userEmail = AuthManager.email.value ?: ""
+
                     val newProfile = Profile(
                         user_id = currentUserId,
                         firstname = currentState.firstName,
                         lastname = currentState.lastName,
                         address = currentState.address,
-                        phone = currentState.phone
+                        phone = currentState.phone,
+                        email = userEmail  // Добавляем email
                     )
                     val createdProfile = repository.createProfile(newProfile, currentToken)
 

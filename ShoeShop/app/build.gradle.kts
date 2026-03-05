@@ -61,6 +61,7 @@ dependencies {
     implementation("com.google.accompanist:accompanist-pager-indicators:0.28.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

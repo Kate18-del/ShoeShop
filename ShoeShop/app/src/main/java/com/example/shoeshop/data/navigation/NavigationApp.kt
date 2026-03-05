@@ -10,8 +10,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.shoeshop.data.AuthManager
 import com.example.shoeshop.ui.screens.CartScreen
 import com.example.shoeshop.ui.screens.CatalogScreen
+import com.example.shoeshop.ui.screens.CheckoutScreen
 import com.example.shoeshop.ui.screens.CreateNewPasswordScreen
 import com.example.shoeshop.ui.screens.DetailsScreen
 import com.example.shoeshop.ui.screens.FavoriteScreen
@@ -203,8 +205,31 @@ fun NavigationApp(navController: NavHostController) {
 
         composable("cart") {
             CartScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onCheckoutClick = {
+                    navController.navigate("checkout")
+                }
             )
+        }
+
+        composable("checkout") {
+            val userId by AuthManager.userId.collectAsState()
+            val accessToken by AuthManager.accessToken.collectAsState()
+            val userEmail by AuthManager.email.collectAsState()
+
+            if (userId != null && accessToken != null) {
+                CheckoutScreen(
+                    userId = userId!!,
+                    token = accessToken!!,
+                    userEmail = userEmail,
+                    onBackClick = { navController.popBackStack() },
+                    onOrderSuccess = {
+                        navController.navigate("home") {
+                            popUpTo("checkout") { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
     }
 }

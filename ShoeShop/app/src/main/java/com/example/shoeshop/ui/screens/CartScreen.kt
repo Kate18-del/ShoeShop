@@ -30,13 +30,15 @@ import androidx.compose.ui.zIndex
 import com.example.shoeshop.R
 import com.example.shoeshop.data.CartItem
 import com.example.shoeshop.data.CartManager
+import com.example.shoeshop.ui.theme.AppTypography
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onCheckoutClick: () -> Unit
 ) {
     val cartItems by CartManager.cartItems.collectAsState()
 
@@ -135,6 +137,28 @@ fun CartScreen(
 
                 // Итоговая сумма
                 CartSummary()
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Кнопка оформления заказа
+                Button(
+                    onClick = onCheckoutClick, // Используем переданную функцию
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(56.dp),
+                    enabled = cartItems.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Оформить заказ",
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
+                }
             }
         }
     }
@@ -155,7 +179,7 @@ fun SwipeableCartItem(
             .fillMaxWidth()
             .height(100.dp)
     ) {
-        // Левая панель с вертикальными кнопками + и - (появляется при свайпе вправо)
+        // Левая панель с кнопками + и - (появляется при свайпе вправо)
         if (offsetX > 20) {
             Row(
                 modifier = Modifier
@@ -178,6 +202,9 @@ fun SwipeableCartItem(
                     // Кнопка плюс
                     IconButton(
                         onClick = onIncrease,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White, CircleShape)
                     ) {
                         Text(
                             text = "+",
@@ -198,7 +225,9 @@ fun SwipeableCartItem(
                     // Кнопка минус
                     IconButton(
                         onClick = onDecrease,
-
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White, CircleShape)
                     ) {
                         Text(
                             text = "−",
@@ -247,19 +276,16 @@ fun SwipeableCartItem(
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
-                            // Если свайп был небольшой - возвращаем
                             if (abs(offsetX) < 80) {
                                 offsetX = 0f
                             }
-                            // Если свайп большой - оставляем открытым
                         }
                     ) { change, dragAmount ->
                         change.consume()
-                        // Двигаем карточку с ограничениями
                         offsetX = (offsetX + dragAmount).coerceIn(-150f, 150f)
                     }
                 }
-                .zIndex(1f), // Карточка поверх фона
+                .zIndex(1f),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
@@ -272,7 +298,6 @@ fun SwipeableCartItem(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Изображение товара
                 Box(
                     modifier = Modifier
                         .size(70.dp)
@@ -301,7 +326,6 @@ fun SwipeableCartItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Название товара
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -315,7 +339,6 @@ fun SwipeableCartItem(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Цена товара
                     Text(
                         text = formatPrice(product.cost),
                         fontSize = 14.sp,
@@ -323,7 +346,6 @@ fun SwipeableCartItem(
                     )
                 }
 
-                // Общая цена
                 Text(
                     text = formatPrice(cartItem.totalPrice),
                     fontSize = 16.sp,
@@ -349,7 +371,6 @@ fun CartSummary() {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Сумма
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -368,7 +389,6 @@ fun CartSummary() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Доставка
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -391,7 +411,6 @@ fun CartSummary() {
                 thickness = 1.dp
             )
 
-            // Итого
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -408,30 +427,10 @@ fun CartSummary() {
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Кнопка отправки заказа
-            Button(
-                onClick = { /* Отправить заказ */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "Отправить Заказ",
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-            }
         }
     }
 }
 
 fun formatPrice(price: Double): String {
-    return "P${String.format("%.2f", price)}"
+    return "₽${String.format("%.2f", price)}"
 }
