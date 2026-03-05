@@ -321,15 +321,10 @@ fun HomeScreen(
                         }
                     }
                     1 -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Избранное",
-                                style = AppTypography.headingRegular32
-                            )
-                        }
+                        FavoriteScreen(
+                            onProductClick = onProductClick
+                        )
+
                     }
                     2 -> {
                         Box(

@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shoeshop.ui.screens.CatalogScreen
 import com.example.shoeshop.ui.screens.CreateNewPasswordScreen
+import com.example.shoeshop.ui.screens.FavoriteScreen
 import com.example.shoeshop.ui.screens.ForgotPasswordScreen
 import com.example.shoeshop.ui.screens.HomeScreen
 import com.example.shoeshop.ui.screens.OnboardScreen
@@ -172,6 +173,14 @@ fun NavigationApp(navController: NavHostController) {
             val category = backStackEntry.arguments?.getString("category") ?: "Все"
             CatalogScreen(
                 initialCategory = category,
+                onProductClick = { product ->
+                    navController.navigate("product_detail/${product.id}")
+                }
+            )
+        }
+
+        composable("favorite") {
+            FavoriteScreen(
                 onProductClick = { product ->
                     navController.navigate("product_detail/${product.id}")
                 }
