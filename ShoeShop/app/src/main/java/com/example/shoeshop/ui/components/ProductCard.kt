@@ -10,21 +10,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.example.shoeshop.R
 import com.example.shoeshop.ui.theme.AppTypography
 
 @Composable
@@ -32,7 +32,8 @@ fun ProductCard(
     product: Product,
     isFavorite: Boolean,
     onProductClick: () -> Unit,
-    onFavoriteClick: () -> Unit
+    onFavoriteClick: () -> Unit,
+    onAddToCart: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -45,7 +46,7 @@ fun ProductCard(
         )
     ) {
         Column {
-            // Верхняя часть с изображением и кнопкой избранного
+            // Верхняя часть с изображением
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -61,11 +62,8 @@ fun ProductCard(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    // Заглушка
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFFE0E0E0)),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -88,6 +86,23 @@ fun ProductCard(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Избранное",
                         tint = if (isFavorite) Color.Red else Color.Gray,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Кнопка добавления в корзину
+                IconButton(
+                    onClick = onAddToCart,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .size(32.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = "В корзину",
+                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -122,7 +137,7 @@ fun ProductCard(
                 if (product.is_best_seller == true) {
                     Text(
                         text = "BEST SELLER",
-                        style = AppTypography.bodyRegular20,
+                        style = AppTypography.bodyRegular12,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 2.dp)
                     )
@@ -143,10 +158,11 @@ fun ProductCardPreview() {
             cost = 13999.00,
             description = "Ретро-кроссовки",
             is_best_seller = true,
-            imageResId = null
+            imageResId = R.drawable.ic_launcher_foreground
         ),
         isFavorite = false,
         onProductClick = {},
-        onFavoriteClick = {}
+        onFavoriteClick = {},
+        onAddToCart = {}
     )
 }

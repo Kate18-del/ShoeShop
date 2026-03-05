@@ -3,9 +3,12 @@ import SignInRequest
 import com.example.myfirstproject.data.model.SignInResponse
 import com.example.myfirstproject.data.model.SignUpRequest
 import com.example.myfirstproject.data.model.SignUpResponse
+import com.example.shoeshop.data.model.AddToCartRequest
+import com.example.shoeshop.data.model.Cart
 import com.example.shoeshop.data.model.ChangePasswordRequest
 import com.example.shoeshop.data.model.ChangePasswordResponse
 import com.example.shoeshop.data.model.Favorite
+import com.example.shoeshop.data.model.UpdateCartRequest
 import com.example.shoeshop.data.model.UpdateProfileRequest
 import retrofit2.Response
 import retrofit2.http.*
@@ -169,6 +172,39 @@ interface UserManagementService {
         @Header("Authorization") authorization: String,
         @Header("apikey") apiKey: String = API_KEY
     ): Response<List<Product>>
+
+    // ===== CART METHODS =====
+
+    @GET("rest/v1/cart")
+    suspend fun getCart(
+        @Query("user_id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<List<Cart>>
+
+    @POST("rest/v1/cart")
+    suspend fun addToCart(
+        @Body cartItem: AddToCartRequest,  // ← Используем импортированный класс
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Cart>>
+
+    @PATCH("rest/v1/cart")
+    suspend fun updateCartItem(
+        @Query("id") filter: String,
+        @Body updates: UpdateCartRequest,  // ← Используем импортированный класс
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Cart>>
+
+    @DELETE("rest/v1/cart")
+    suspend fun removeFromCart(
+        @Query("id") filter: String,
+        @Header("Authorization") authorization: String,
+        @Header("apikey") apiKey: String = API_KEY
+    ): Response<Unit>
 }
 
 

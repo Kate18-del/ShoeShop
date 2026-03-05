@@ -1,8 +1,8 @@
-// screens/HomeScreen.kt
 package com.example.shoeshop.ui.screens
 
 import Category
 import Product
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,20 +13,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import com.example.shoeshop.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,12 +30,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shoeshop.R
+import com.example.shoeshop.data.CartManager
 import com.example.shoeshop.ui.components.ProductCard
-
-
 import com.example.shoeshop.ui.theme.AppTypography
-import com.example.shoeshop.ui.viewmodel.FavoriteViewModel
 import com.example.shoeshop.ui.viewmodel.FavoritesManager
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,13 +49,18 @@ fun HomeScreen(
     token: String
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    val context = LocalContext.current
 
-    // Инициализируем FavoritesManager
+    // Инициализируем FavoritesManager и CartManager
     LaunchedEffect(userId, token) {
         if (userId.isNotEmpty() && token.isNotEmpty()) {
             FavoritesManager.init(userId, token)
+            CartManager.init(userId, token)
         }
     }
+
+    // Получаем состояние избранного
+    val favoriteIds by FavoritesManager.favoriteProductIds.collectAsState()
 
     // Состояние для выбранной категории
     var selectedCategory by remember { mutableStateOf("Все") }
@@ -156,7 +155,10 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         FloatingActionButton(
-                            onClick = { onCartClick() },
+                            onClick = {
+                                onCartClick()
+                                selected = 2
+                            },
                             modifier = Modifier.size(56.dp),
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -300,7 +302,33 @@ fun HomeScreen(
                             item {
                                 PopularSection(
                                     products = popularProducts,
-                                    onProductClick = onProductClick
+                                    onProductClick = onProductClick,
+                                    favoriteIds = favoriteIds,
+                                    onFavoriteClick = { productId ->
+                                        FavoritesManager.toggleFavorite(productId) { success ->
+                                            if (success) {
+                                                // Можно показать уведомление
+                                            }
+                                        }
+                                    },
+                                    onAddToCart = { product ->
+                                        // Добавление в корзину
+                                        CartManager.addToCart(product.id) { success ->
+                                            if (success) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "${product.title} добавлен в корзину",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Ошибка добавления в корзину",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    }
                                 )
                             }
 
@@ -335,11 +363,11 @@ fun HomeScreen(
 @Composable
 private fun PopularSection(
     products: List<Product>,
-    onProductClick: (Product) -> Unit
+    onProductClick: (Product) -> Unit,
+    favoriteIds: Set<String>,
+    onFavoriteClick: (String) -> Unit,
+    onAddToCart: (Product) -> Unit
 ) {
-    // Получаем состояние избранного из FavoritesManager
-    val favoriteIds by FavoritesManager.favoriteProductIds.collectAsState()
-
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -370,14 +398,14 @@ private fun PopularSection(
                     product = product,
                     isFavorite = favoriteIds.contains(product.id),
                     onProductClick = { onProductClick(product) },
-                    onFavoriteClick = {
-                        FavoritesManager.toggleFavorite(product.id)
-                    }
+                    onFavoriteClick = { onFavoriteClick(product.id) },
+                    onAddToCart = { onAddToCart(product) }
                 )
             }
         }
     }
 }
+
 
 
 @Composable
@@ -448,4 +476,3 @@ private fun PromotionsSection() {
         }
     }
 }
-
