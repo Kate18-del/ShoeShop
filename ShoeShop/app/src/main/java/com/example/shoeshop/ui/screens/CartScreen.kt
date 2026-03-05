@@ -9,9 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,21 +19,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.shoeshop.R
 import com.example.shoeshop.data.CartItem
 import com.example.shoeshop.data.CartManager
-import com.example.shoeshop.ui.theme.AppTypography
-import kotlinx.coroutines.delay
-import java.text.NumberFormat
-import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,27 +39,15 @@ fun CartScreen(
     onBackClick: () -> Unit
 ) {
     val cartItems by CartManager.cartItems.collectAsState()
-    val context = LocalContext.current
-
-    // Состояние для отслеживания свайпов
-    val swipeStates = remember {
-        mutableStateMapOf<String, SwipeState>()
-    }
-
-    // Обновляем состояния при изменении списка
-    LaunchedEffect(cartItems) {
-        // Удаляем состояния для удаленных товаров
-        val currentIds = cartItems.map { it.cart.id }.toSet()
-        swipeStates.keys.retainAll(currentIds)
-    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "My Cart",
-                        style = AppTypography.headingSemiBold16,
+                        text = "Корзина",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 18.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -98,15 +82,13 @@ fun CartScreen(
             ) {
                 Text(
                     text = "Корзина",
-                    style = AppTypography.headingRegular32.copy(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "${cartItems.size} товара",
-                    style = AppTypography.bodyRegular16,
+                    fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
@@ -129,7 +111,7 @@ fun CartScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Корзина пуста",
-                            style = AppTypography.bodyRegular16,
+                            fontSize = 16.sp,
                             color = Color.Gray
                         )
                     }
@@ -142,11 +124,8 @@ fun CartScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(cartItems) { cartItem ->
-                        val swipeState = swipeStates.getOrPut(cartItem.cart.id) { SwipeState() }
-
                         SwipeableCartItem(
                             cartItem = cartItem,
-                            swipeState = swipeState,
                             onIncrease = { CartManager.increaseQuantity(cartItem.cart.id) },
                             onDecrease = { CartManager.decreaseQuantity(cartItem.cart.id) },
                             onDelete = { CartManager.removeFromCart(cartItem.cart.id) }
@@ -154,232 +133,202 @@ fun CartScreen(
                     }
                 }
 
-                // Итого
+                // Итоговая сумма
                 CartSummary()
             }
         }
     }
 }
 
-data class SwipeState(
-    var offsetX: Float = 0f,
-    var isSwiping: Boolean = false
-)
-
 @Composable
 fun SwipeableCartItem(
     cartItem: CartItem,
-    swipeState: SwipeState,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit
 ) {
     val product = cartItem.product ?: return
+    var offsetX by remember { mutableStateOf(0f) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
     ) {
-        // Кнопка удаления (появляется при свайпе влево)
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(end = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Red.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.CenterEnd
-        ) {
+        // Левая панель с вертикальными кнопками + и - (появляется при свайпе вправо)
+        if (offsetX > 20) {
             Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = 100.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                    .zIndex(0f),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                horizontalArrangement = Arrangement.Start
             ) {
-                Text(
-                    text = "Удалить",
-                    color = Color.Red,
-                    style = AppTypography.bodyMedium14
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Удалить",
-                    tint = Color.Red
-                )
-            }
-        }
-
-        // Кнопки увеличения/уменьшения (появляются при свайпе вправо)
-        Row(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(start = 16.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(
-                onClick = onDecrease,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-            ) {
-                Icon(
-                    painter  = painterResource(id= R.drawable.minus),
-                    contentDescription = "Уменьшить",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Text(
-                text = "${cartItem.cart.count}",
-                style = AppTypography.bodyMedium16,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-
-            IconButton(
-                onClick = onIncrease,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-            ) {
-                Icon(
-                    painter = painterResource(id= R.drawable.add),
-                    contentDescription = "Увеличить",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-        // Основная карточка товара (с возможностью свайпа)
-        CartItemCard(
-            cartItem = cartItem,
-            swipeState = swipeState,
-            onSwipeLeft = {
-                // Показываем кнопку удаления
-            },
-            onSwipeRight = {
-                // Показываем кнопки количества
-            }
-        )
-    }
-}
-
-@Composable
-fun CartItemCard(
-    cartItem: CartItem,
-    swipeState: SwipeState,
-    onSwipeLeft: () -> Unit,
-    onSwipeRight: () -> Unit
-) {
-    val product = cartItem.product ?: return
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { swipeState.isSwiping = true },
-                    onDragEnd = {
-                        swipeState.isSwiping = false
-                        if (swipeState.offsetX > 100) {
-                            onSwipeRight()
-                        } else if (swipeState.offsetX < -100) {
-                            onSwipeLeft()
-                        }
-                        swipeState.offsetX = 0f
-                    },
-                    onDragCancel = {
-                        swipeState.isSwiping = false
-                        swipeState.offsetX = 0f
-                    }
-                ) { change, dragAmount ->
-                    change.consume()
-                    swipeState.offsetX = (swipeState.offsetX + dragAmount).coerceIn(-150f, 150f)
-                }
-            }
-            .offset(x = swipeState.offsetX.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Изображение товара
-            Box(
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFF5F5F5))
-            ) {
-                if (product.imageResId != null && product.imageResId != 0) {
-                    Image(
-                        painter = painterResource(id = product.imageResId),
-                        contentDescription = product.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                // Вертикальные кнопки
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(60.dp)
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // Кнопка плюс
+                    IconButton(
+                        onClick = onIncrease,
                     ) {
                         Text(
-                            text = "👟",
-                            fontSize = 32.sp
+                            text = "+",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Количество
+                    Text(
+                        text = "${cartItem.cart.count}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // Кнопка минус
+                    IconButton(
+                        onClick = onDecrease,
+
+                    ) {
+                        Text(
+                            text = "−",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Информация о товаре
-            Column(
-                modifier = Modifier.weight(1f)
+        // Правая панель с кнопкой удаления (появляется при свайпе влево)
+        if (offsetX < -20) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 100.dp)
+                    .background(Color.Red.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                    .zIndex(0f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = product.title,
-                    style = AppTypography.bodyMedium16,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = product.getFormattedPrice(),
-                    style = AppTypography.bodyMedium16.copy(
-                        fontWeight = FontWeight.Bold
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(Color.White, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = Color.Red,
+                        modifier = Modifier.size(24.dp)
                     )
-                )
+                }
             }
+        }
 
-            // Количество и цена за всё
-            Column(
-                horizontalAlignment = Alignment.End
+        // Карточка товара (двигается при свайпе)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .offset { IntOffset(offsetX.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            // Если свайп был небольшой - возвращаем
+                            if (abs(offsetX) < 80) {
+                                offsetX = 0f
+                            }
+                            // Если свайп большой - оставляем открытым
+                        }
+                    ) { change, dragAmount ->
+                        change.consume()
+                        // Двигаем карточку с ограничениями
+                        offsetX = (offsetX + dragAmount).coerceIn(-150f, 150f)
+                    }
+                }
+                .zIndex(1f), // Карточка поверх фона
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "x${cartItem.cart.count}",
-                    style = AppTypography.bodyRegular14,
-                    color = Color.Gray
-                )
+                // Изображение товара
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFF5F5F5))
+                ) {
+                    if (product.imageResId != null && product.imageResId != 0) {
+                        Image(
+                            painter = painterResource(id = product.imageResId),
+                            contentDescription = product.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "👟",
+                                fontSize = 30.sp
+                            )
+                        }
+                    }
+                }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
+                // Название товара
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = product.title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Цена товара
+                    Text(
+                        text = formatPrice(product.cost),
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+
+                // Общая цена
                 Text(
                     text = formatPrice(cartItem.totalPrice),
-                    style = AppTypography.bodyMedium16.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -407,12 +356,13 @@ fun CartSummary() {
             ) {
                 Text(
                     text = "Сумма",
-                    style = AppTypography.bodyRegular16,
+                    fontSize = 16.sp,
                     color = Color.Gray
                 )
                 Text(
                     text = formatPrice(CartManager.subtotal),
-                    style = AppTypography.bodyMedium16
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -425,12 +375,13 @@ fun CartSummary() {
             ) {
                 Text(
                     text = "Доставка",
-                    style = AppTypography.bodyRegular16,
+                    fontSize = 16.sp,
                     color = Color.Gray
                 )
                 Text(
                     text = formatPrice(CartManager.deliveryCost),
-                    style = AppTypography.bodyMedium16
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -447,13 +398,14 @@ fun CartSummary() {
             ) {
                 Text(
                     text = "Итого",
-                    style = AppTypography.headingSemiBold16
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = formatPrice(CartManager.total),
-                    style = AppTypography.headingSemiBold16.copy(
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -472,7 +424,7 @@ fun CartSummary() {
             ) {
                 Text(
                     text = "Отправить Заказ",
-                    style = AppTypography.bodyMedium16,
+                    fontSize = 16.sp,
                     color = Color.White
                 )
             }
@@ -481,21 +433,5 @@ fun CartSummary() {
 }
 
 fun formatPrice(price: Double): String {
-    return try {
-        // Простой способ форматирования
-        val formatted = String.format("%,.2f", price)
-            .replace(",", " ")
-            .replace(".", ",")
-
-        "₽$formatted"
-    } catch (e: Exception) {
-        "₽${String.format("%.2f", price)}"
-    }
-}
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun CartScreenPreview() {
-    CartScreen(
-        onBackClick = {}
-    )
+    return "P${String.format("%.2f", price)}"
 }
