@@ -34,22 +34,15 @@ import coil.request.ImageRequest
 import com.example.shoeshop.R
 import com.example.shoeshop.ui.theme.AppTypography
 import com.example.shoeshop.ui.viewmodel.FavoriteViewModel
+import com.example.shoeshop.ui.viewmodel.FavoritesManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoriteScreen(
-    onProductClick: (Product) -> Unit,
-    viewModel: FavoriteViewModel = viewModel()
+    onProductClick: (Product) -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val favorites by FavoritesManager.favorites.collectAsState()
     val context = LocalContext.current
-
-    LaunchedEffect(state.error) {
-        state.error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -68,16 +61,7 @@ fun FavoriteScreen(
             )
         }
     ) { paddingValues ->
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (state.favorites.isEmpty()) {
+        if (favorites.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -108,15 +92,6 @@ fun FavoriteScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                // Время 9:41
-                item {
-                    Text(
-                        text = "9:41",
-                        style = AppTypography.bodyRegular12,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                }
 
                 // Заголовок
                 item {
@@ -128,12 +103,15 @@ fun FavoriteScreen(
                 }
 
                 // Список избранных товаров
-                items(state.favorites) { (favorite, product) ->
+                items(favorites) { (favorite, product) ->
                     if (product != null) {
                         FavoriteItem(
                             product = product,
                             onProductClick = { onProductClick(product) },
-                            onRemoveClick = { viewModel.removeFromFavorite(favorite.id) }
+                            onRemoveClick = {
+                                FavoritesManager.removeFavorite(favorite.id)
+                                Toast.makeText(context, "Удалено из избранного", Toast.LENGTH_SHORT).show()
+                            }
                         )
                     }
                 }

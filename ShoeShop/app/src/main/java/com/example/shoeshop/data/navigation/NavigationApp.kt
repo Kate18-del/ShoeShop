@@ -123,6 +123,9 @@ fun NavigationApp(navController: NavHostController) {
                     // Переходим в каталог с выбранной категорией
                     navController.navigate("catalog/Outdoor")
                 },
+                onFavoriteClick = {
+                    navController.navigate("favorite")
+                },
                 userId = userId ?: "",  // Передаем userId из AuthManager
                 token = accessToken ?: "" // Передаем token из AuthManager
             )
