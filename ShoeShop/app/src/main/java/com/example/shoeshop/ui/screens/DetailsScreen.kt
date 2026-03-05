@@ -195,15 +195,6 @@ fun ProductDetailsContent(
             .background(Color.White)
             .then(swipeModifier)
     ) {
-        // Время 9:41
-        Text(
-            text = "9:41",
-            style = AppTypography.bodyRegular12,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            textAlign = TextAlign.Center
-        )
 
         // Индикатор текущего товара
         if (state.products.size > 1) {
