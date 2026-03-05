@@ -371,11 +371,7 @@ private fun PopularSection(
                     isFavorite = favoriteIds.contains(product.id),
                     onProductClick = { onProductClick(product) },
                     onFavoriteClick = {
-                        FavoritesManager.toggleFavorite(product.id) { success ->
-                            if (success) {
-                                // Можно показать уведомление
-                            }
-                        }
+                        FavoritesManager.toggleFavorite(product.id)
                     }
                 )
             }

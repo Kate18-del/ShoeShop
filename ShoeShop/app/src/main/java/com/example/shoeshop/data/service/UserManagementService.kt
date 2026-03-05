@@ -162,6 +162,7 @@ interface UserManagementService {
         @Header("apikey") apiKey: String = API_KEY
     ): Response<Unit>
 
+
     @GET("rest/v1/products")
     suspend fun getProductById(
         @Query("id") filter: String,

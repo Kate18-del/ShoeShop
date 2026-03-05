@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shoeshop.ui.screens.CatalogScreen
 import com.example.shoeshop.ui.screens.CreateNewPasswordScreen
+import com.example.shoeshop.ui.screens.DetailsScreen
 import com.example.shoeshop.ui.screens.FavoriteScreen
 import com.example.shoeshop.ui.screens.ForgotPasswordScreen
 import com.example.shoeshop.ui.screens.HomeScreen
@@ -187,6 +188,13 @@ fun NavigationApp(navController: NavHostController) {
                 onProductClick = { product ->
                     navController.navigate("product_detail/${product.id}")
                 }
+            )
+        }
+        composable("product_detail/{productId}") { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            DetailsScreen(
+                productId = productId,
+                onBackClick = { navController.popBackStack() }
             )
         }
     }
